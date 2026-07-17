@@ -15,6 +15,7 @@ export const WorkspacePage = ({ doc, onBack, onUpdateDoc }) => {
   const [pageSize] = useState(10);
   const [sidePanel, setSidePanel] = useState(null);
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [customCategories,setCustomCategories] = useState({});
 
   const processed = useMemo(() => {
     let data = [...rows];
@@ -35,12 +36,64 @@ export const WorkspacePage = ({ doc, onBack, onUpdateDoc }) => {
   const paginated = processed.slice((page - 1) * pageSize, page * pageSize);
 
   const handleAdd = async (formData) => {
-    const newRow = await dataService.addRow(doc.id, formData);
-    const updated = [...rows, newRow];
-    setRows(updated);
-    onUpdateDoc({ ...doc, rows: updated });
+
+  console.log("FORM DATA:", formData);
+  console.log("DOCUMENT HEADERS:", doc.headers);
+
+
+  const newRow = {
+    __id: crypto.randomUUID()
   };
 
+
+  // Match exactly with document columns
+  doc.headers.forEach(header => {
+
+    newRow[header] = formData[header] ?? '';
+
+  });
+
+
+  console.log("NEW ROW:", newRow);
+
+
+
+  // Stop empty rows
+  const hasValue = doc.headers.some(
+    header => 
+      String(newRow[header]).trim() !== ''
+  );
+
+
+  if(!hasValue){
+
+    toast.error(
+      "Empty Row",
+      "Please enter at least one value."
+    );
+
+    return;
+
+  }
+
+
+
+  const updatedRows = [
+    ...rows,
+    newRow
+  ];
+
+
+  setRows(updatedRows);
+
+
+  onUpdateDoc({
+    ...doc,
+    rows: updatedRows
+  });
+
+
+};
   const handleEdit = async (formData) => {
     const rowId = sidePanel.row.__id;
     const updatedRow = await dataService.updateRow(doc.id, rowId, { ...formData, __id: rowId });
@@ -99,7 +152,17 @@ export const WorkspacePage = ({ doc, onBack, onUpdateDoc }) => {
         </div>
       </div>
 
-      {sidePanel && <EditSidePanel mode={sidePanel.mode} doc={{ ...doc, rows }} rowData={sidePanel.row} onClose={() => setSidePanel(null)} onSave={sidePanel.mode === 'add' ? handleAdd : handleEdit} />}
+      {sidePanel && 
+        <EditSidePanel
+          mode={sidePanel.mode}
+          doc={{ ...doc, rows }}
+          rowData={sidePanel.row}
+          onClose={() => setSidePanel(null)}
+          onSave={sidePanel.mode === 'add' ? handleAdd : handleEdit}
+          customCategories={customCategories}
+          setCustomCategories={setCustomCategories}
+        />
+      }
       {deleteTarget && <DeleteModal row={deleteTarget} headers={doc.headers} onClose={() => setDeleteTarget(null)} onConfirm={handleDelete} />}
     </div>
   );

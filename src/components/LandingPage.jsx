@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
-import { UploadIcon, FileSpreadIcon, TrashIcon, ChevronRightIcon } from './Icons';
+import { UploadIcon, FileSpreadIcon, TrashIcon, ChevronRightIcon, PlusIcon } from './Icons';
+import { CreateDocumentModal } from './CreateDocumentModal';
 import { dataService } from '../services/dataService';
 import { useToast } from '../context/ToastContext';
 
@@ -7,6 +8,8 @@ export const LandingPage = ({ documents, onOpenDoc, onAddDoc, onDeleteDoc }) => 
   const toast = useToast();
   const [dragOver, setDragOver] = useState(false);
   const [parsing, setParsing] = useState(false);
+  const [showManualCreate, setShowManualCreate] = useState(false);
+  const [sheetName,setSheetName] = useState(''); 
   const fileInputRef = useRef(null);
 
   const handleFiles = async (files) => {
@@ -55,20 +58,68 @@ export const LandingPage = ({ documents, onOpenDoc, onAddDoc, onDeleteDoc }) => 
         </div>
       </div>
 
+      <div className="upload-options">
+
       <div
         className={`upload-zone${dragOver ? ' drag-over' : ''}`}
-        onDrop={(e) => { e.preventDefault(); setDragOver(false); handleFiles(e.dataTransfer.files); }}
-        onDragOver={(e) => { e.preventDefault(); setDragOver(true); }}
+        onDrop={(e) => { 
+          e.preventDefault(); 
+          setDragOver(false); 
+          handleFiles(e.dataTransfer.files); 
+        }}
+        onDragOver={(e) => { 
+          e.preventDefault(); 
+          setDragOver(true); 
+        }}
         onDragLeave={() => setDragOver(false)}
         onClick={() => !parsing && fileInputRef.current?.click()}
       >
-        <input ref={fileInputRef} className="upload-input" type="file" accept=".csv,.xlsx,.xls" multiple onChange={(e) => handleFiles(e.target.files)} />
+
+        <input 
+          ref={fileInputRef}
+          className="upload-input"
+          type="file"
+          accept=".csv,.xlsx,.xls"
+          multiple
+          onChange={(e) => handleFiles(e.target.files)}
+        />
+
         <div className="upload-icon-wrap">
-          <UploadIcon size={32} style={{ color: 'var(--teal-400)' }} />
+          <UploadIcon size={32}/>
         </div>
-        <div className="upload-title">Drag & Drop Corporate Sheets Here</div>
-        <div className="upload-subtitle">Supports `.csv`, `.xlsx`, and `.xls` files.</div>
+
+        <div className="upload-title">
+          Import Spreadsheet
+        </div>
+
+        <div className="upload-subtitle">
+          Supports CSV, XLSX, and XLS files
+        </div>
+
       </div>
+
+
+      <div 
+        className="manual-create-section"
+        onClick={() => setShowManualCreate(true)}
+      >
+
+        <div className="upload-icon-wrap">
+          <PlusIcon size={32}/>
+        </div>
+
+        <div className="upload-title">
+          Create Manually
+        </div>
+
+        <div className="upload-subtitle">
+          Create a new sheet and add data yourself
+        </div>
+
+      </div>
+
+
+    </div>
 
       <div className="doc-grid">
         {documents.map(doc => (
@@ -87,6 +138,32 @@ export const LandingPage = ({ documents, onOpenDoc, onAddDoc, onDeleteDoc }) => 
           </div>
         ))}
       </div>
+
+        {showManualCreate && (
+
+      <CreateDocumentModal
+
+        onClose={() =>
+          setShowManualCreate(false)
+        }
+
+
+        onCreate={(doc)=>{
+
+          onAddDoc(doc);
+
+          setShowManualCreate(false);
+
+          toast.success(
+            "Sheet Created",
+            "Manual sheet created successfully."
+          );
+
+        }}
+
+      />
+
+    )}
     </main>
   );
 };

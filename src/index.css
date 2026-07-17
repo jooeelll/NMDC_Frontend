@@ -367,7 +367,7 @@ body {
   border: 2px dashed rgba(14,154,167,.3);
   border-radius: var(--radius-xl);
   background: rgba(14,154,167,.03);
-  padding: 3.5rem 2rem;
+  padding: 2rem;
   text-align: center;
   cursor: pointer;
   transition: all var(--transition-base);
@@ -406,7 +406,8 @@ body {
   transition: transform var(--transition-spring), box-shadow var(--transition-base);
 }
 
-.upload-zone:hover .upload-icon-wrap {
+.upload-zone:hover .upload-icon-wrap,
+.manual-create-section:hover .upload-icon-wrap {
   transform: translateY(-4px) scale(1.05);
   box-shadow: 0 8px 24px rgba(14,154,167,.25);
 }
@@ -466,6 +467,79 @@ body {
 .upload-btn:hover {
   transform: translateY(-2px);
   box-shadow: 0 6px 20px rgba(14,154,167,.4);
+}
+
+.upload-options {
+  display: flex;
+  gap: 2rem;
+  width: 100%;
+  margin-bottom: 2.5rem;
+}
+
+
+.upload-options .upload-zone,
+.manual-create-section {
+
+  flex: 1;
+
+  margin-bottom: 0;
+
+  min-height: 260px;
+
+  box-sizing: border-box;
+
+}
+
+/* ---------- MANUAL ZONE ---------- */
+
+
+.manual-divider {
+  color: var(--slate-400);
+  font-size: .875rem;
+  margin-bottom: 1rem;
+}
+
+.manual-create-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: .5rem;
+}
+
+.manual-create-section {
+
+  border: 2px dashed rgba(14,154,167,.3);
+
+  border-radius: var(--radius-xl);
+
+  background: rgba(14,154,167,.03);
+
+  padding: 2rem;
+
+  text-align: center;
+
+  cursor: pointer;
+
+  transition: all var(--transition-base);
+
+  display:flex;
+
+  flex-direction:column;
+
+  justify-content:center;
+
+  align-items:center;
+
+}
+
+
+.manual-create-section:hover {
+
+  border-color: var(--teal-400);
+
+  background: rgba(14,154,167,.07);
+
+  box-shadow: var(--shadow-glow-teal);
+
 }
 
 /* ---------- DOCUMENT CARDS GRID ---------- */
