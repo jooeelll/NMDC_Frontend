@@ -25,13 +25,10 @@ export const CreateDocumentModal = ({ onClose, onCreate }) => {
   };
 
   const removeColumn = (index) => {
-    setColumns(prev =>
-      prev.filter((_, i) => i !== index)
-    );
+    setColumns(columns.filter((_, i) => i !== index));
   };
 
   const createSheet = () => {
-
     if (sheetName.trim() === '') {
       toast.error(
         "Missing Sheet Name",
@@ -84,34 +81,23 @@ export const CreateDocumentModal = ({ onClose, onCreate }) => {
       return;
     }
 
-
     const newDoc = {
       id: Math.random().toString(36).slice(2, 9),
-
       name: sheetName,
-
       size: 0,
-
       uploadedAt: new Date().toISOString(),
-
-      headers: columns.map(
-        col => col.name
-      ),
-
+      headers: columns.map(col => col.name),
       colTypes: Object.fromEntries(
         columns.map(col => [
           col.name,
           col.type
         ])
       ),
-
       rows: []
     };
 
-
     onCreate(newDoc);
   };
-
 
   return (
     <>
@@ -140,7 +126,6 @@ export const CreateDocumentModal = ({ onClose, onCreate }) => {
 
           </div>
 
-
           <button
             className="modal-close"
             onClick={onClose}
@@ -151,18 +136,15 @@ export const CreateDocumentModal = ({ onClose, onCreate }) => {
         </div>
 
 
-
         <div className="side-panel-body">
 
           <div className="form-grid single-col">
-
 
             <div className="form-group">
 
               <label className="form-label">
                 Sheet Name
               </label>
-
 
               <input
                 className="form-input"
@@ -176,91 +158,82 @@ export const CreateDocumentModal = ({ onClose, onCreate }) => {
             </div>
 
 
-
             <label className="form-label">
               Columns
             </label>
 
 
+            {columns.map((column, index) => (
 
-            {
-              columns.map((column, index) => (
+              <div
+                key={index}
+                style={{
+                  display: 'flex',
+                  gap: '0.75rem',
+                  alignItems: 'center'
+                }}
+              >
 
-                <div
-                  key={index}
-                  style={{
-                    display: 'flex',
-                    gap: '0.75rem',
-                    alignItems: 'center'
-                  }}
+                <input
+                  className="form-input"
+                  placeholder="Column name"
+                  value={column.name}
+                  onChange={(e) =>
+                    updateColumn(
+                      index,
+                      'name',
+                      e.target.value
+                    )
+                  }
+                />
+
+
+                <select
+                  className="form-select"
+                  value={column.type}
+                  onChange={(e) =>
+                    updateColumn(
+                      index,
+                      'type',
+                      e.target.value
+                    )
+                  }
                 >
 
+                  <option value="" disabled>
+                    Select Data Type
+                  </option>
 
-                  <input
-                    className="form-input"
-                    placeholder="Column name"
-                    value={column.name}
-                    onChange={(e) =>
-                      updateColumn(
-                        index,
-                        'name',
-                        e.target.value
-                      )
-                    }
-                  />
+                  <option value="text">
+                    Text
+                  </option>
 
+                  <option value="number">
+                    Number
+                  </option>
 
+                  <option value="date">
+                    Date
+                  </option>
 
-                  <select
-                    className="form-select"
-                    value={column.type}
-                    onChange={(e) =>
-                      updateColumn(
-                        index,
-                        'type',
-                        e.target.value
-                      )
-                    }
-                  >
-
-                    <option value="" disabled>
-                      Select Data Type
-                    </option>
-
-                    <option value="text">
-                      Text
-                    </option>
-
-                    <option value="number">
-                      Number
-                    </option>
-
-                    <option value="date">
-                      Date
-                    </option>
-
-                  </select>
+                </select>
 
 
+                <button
+                  className="btn btn-ghost btn-icon"
+                  style={{
+                    color: 'var(--danger-500)'
+                  }}
+                  onClick={() =>
+                    removeColumn(index)
+                  }
+                >
+                  <TrashIcon size={15} />
+                </button>
 
-                  <button
-                    className="btn btn-ghost btn-icon"
-                    style={{
-                      color: 'var(--danger-500)'
-                    }}
-                    onClick={() =>
-                      removeColumn(index)
-                    }
-                  >
-                    <TrashIcon size={15} />
-                  </button>
+              </div>
 
-
-                </div>
-
-              ))
-            }
-
+            ))}
 
 
             <button
@@ -277,8 +250,6 @@ export const CreateDocumentModal = ({ onClose, onCreate }) => {
         </div>
 
 
-
-
         <div className="side-panel-footer">
 
           <button
@@ -289,7 +260,6 @@ export const CreateDocumentModal = ({ onClose, onCreate }) => {
           </button>
 
 
-
           <button
             className="btn btn-primary btn-md"
             onClick={createSheet}
@@ -297,12 +267,10 @@ export const CreateDocumentModal = ({ onClose, onCreate }) => {
             Create Sheet
           </button>
 
-
         </div>
 
 
       </aside>
-
     </>
   );
 };

@@ -4,6 +4,7 @@ import { CreateDocumentModal } from './CreateDocumentModal';
 import { dataService } from '../services/dataService';
 import { useToast } from '../context/ToastContext';
 import { DeleteModal } from './DeleteModal';
+import { MergeModal } from './MergeModal';
 
 export const LandingPage = ({ documents, onOpenDoc, onAddDoc, onDeleteDoc }) => {
   const toast = useToast();
@@ -12,6 +13,8 @@ export const LandingPage = ({ documents, onOpenDoc, onAddDoc, onDeleteDoc }) => 
   const [showManualCreate, setShowManualCreate] = useState(false);
   const [sheetName,setSheetName] = useState(''); 
   const [deleteTarget, setDeleteTarget] = useState(null);
+  const [mergeTarget,setMergeTarget] = useState(null);
+  const [mergeData,setMergeData] = useState(null);
   const fileInputRef = useRef(null);
 
   const handleFiles = async (files) => {

@@ -911,6 +911,8 @@ body {
 /* ---------- DATA TABLE ---------- */
 .table-wrap {
   overflow-x: auto;
+  overflow-y: auto;
+  max-height: 600px;
   border-radius: 0 0 var(--radius-lg) var(--radius-lg);
   background: rgba(9,23,50,.4);
 }
@@ -923,7 +925,7 @@ body {
 }
 
 .data-table thead th {
-  background: rgba(11,37,69,.8);
+  background: var(--navy-900);
   color: var(--slate-300);
   font-weight: 600;
   text-align: left;

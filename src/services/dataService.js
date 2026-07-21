@@ -64,6 +64,50 @@ export const dataService = {
   addRow: (docId, rowData) => Promise.resolve({ __id: genId(), ...rowData }),
   updateRow: (docId, rowId, rowData) => Promise.resolve({ __id: rowId, ...rowData }),
   deleteRow: (docId, rowId) => Promise.resolve({ success: true }),
+  mergeRows: (doc, newRows) => {
+
+      return new Promise((resolve, reject) => {
+
+        try {
+
+          const mergedRows = [
+            ...doc.rows,
+            ...newRows.map(row => {
+
+              const cleanRow = {
+                __id: genId()
+              };
+
+
+              doc.headers.forEach(header => {
+
+                cleanRow[header] =
+                  row[header] ?? '';
+
+              });
+
+
+              return cleanRow;
+
+            })
+          ];
+
+
+          resolve({
+            ...doc,
+            rows: mergedRows
+          });
+
+
+        } catch(err) {
+
+          reject(err);
+
+        }
+
+      });
+
+    },
 
   exportCsv: (headers, rows, filename) => {
     const data = rows.map(r => {

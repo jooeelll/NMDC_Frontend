@@ -20,13 +20,18 @@ const FormField = ({
 
     const raw = e.target.value;
 
+
     if (colType === 'number') {
 
-      if (raw !== '' && !/^-?\d*\.?\d*$/.test(raw)) {
+      if (
+        raw !== '' &&
+        !/^-?\d*\.?\d*$/.test(raw)
+      ) {
         return;
       }
 
     }
+
 
     onChange(header, raw);
 
@@ -51,19 +56,18 @@ const FormField = ({
         </label>
 
 
-
         <SearchableSelect
 
           value={value || ''}
 
           options={categoryValues}
 
-          onChange={(val)=>
-            onChange(header,val)
+          onChange={(val) =>
+            onChange(header, val)
           }
 
-          onCreateOption={(newValue)=>
-            onCreateCategory(header,newValue)
+          onCreateOption={(newValue) =>
+            onCreateCategory(header, newValue)
           }
 
         />
@@ -89,38 +93,41 @@ const FormField = ({
 
     <div className="form-group">
 
-      <label 
-        className="form-label"
-        htmlFor={`field-${header}`}
-      >
+
+      <label className="form-label">
 
         {header}
+
 
         {
           colType !== 'text' &&
           <span className="type-hint">
+
             {colType}
+
           </span>
         }
+
 
       </label>
 
 
 
-      <input
 
-        id={`field-${header}`}
+      <input
 
         className={`form-input${error ? ' error' : ''}`}
 
-        type={colType === 'date' ? 'date' : 'text'}
+        type="text"
 
         value={value || ''}
 
         onChange={handleChange}
 
         placeholder={
-          colType === 'number'
+          colType === 'date'
+          ? 'DD/MM/YYYY'
+          : colType === 'number'
           ? 'Numeric value only'
           : `Enter ${header}`
         }
@@ -133,6 +140,7 @@ const FormField = ({
 
       {
         error &&
+
         <span className="form-error">
 
           <AlertCircleIcon size={12}/>
@@ -140,6 +148,7 @@ const FormField = ({
           {error}
 
         </span>
+
       }
 
 
@@ -168,64 +177,106 @@ export const EditSidePanel = ({
 
 
   const [formData,setFormData] = useState({});
-
   const [errors,setErrors] = useState({});
-
   const [saving,setSaving] = useState(false);
 
-
-
-
-  const detectCategorical = (
+    const detectCategorical = (
     header,
     rows,
     colTypes
   ) => {
 
-    if(colTypes[header] !== 'text') {
+    if(colTypes[header] !== 'text'){
       return false;
     }
 
 
-    const uniq = new Set(
-      rows
-      .map(r => String(r[header] || ''))
-      .filter(Boolean)
-    );
+    const values = new Set();
 
 
-    return uniq.size <= 12 && rows.length > 0;
+    rows.forEach(row => {
+
+      if(row[header]){
+
+        values.add(
+          String(row[header])
+        );
+
+      }
+
+    });
+
+
+
+    if(customCategories?.[header]){
+
+      customCategories[header].forEach(value => {
+
+        values.add(value);
+
+      });
+
+    }
+
+
+
+    return values.size <= 12 && values.size > 0;
 
   };
 
 
 
 
+  const categoryValues = useMemo(() => {
 
-  const categoryValues = useMemo(()=>{
-
-
-    const cv={};
+    const result = {};
 
 
-    doc.headers.forEach(h=>{
+    doc.headers.forEach(header => {
 
 
       if(
         detectCategorical(
-          h,
+          header,
           doc.rows,
           doc.colTypes
         )
       ){
 
-        cv[h] = [
-          ...new Set(
-            doc.rows
-            .map(r=>String(r[h] || ''))
-            .filter(Boolean)
-          )
-        ].sort();
+
+        const values = new Set();
+
+
+
+        doc.rows.forEach(row => {
+
+          if(row[header]){
+
+            values.add(
+              String(row[header])
+            );
+
+          }
+
+        });
+
+
+
+        if(customCategories?.[header]){
+
+          customCategories[header].forEach(value => {
+
+            values.add(value);
+
+          });
+
+        }
+
+
+
+        result[header] =
+          Array.from(values).sort();
+
 
       }
 
@@ -233,59 +284,45 @@ export const EditSidePanel = ({
     });
 
 
-    return cv;
+
+    return result;
 
 
-  },[doc]);
-
-
-
-
+  },[doc,customCategories]);
 
 
 
-  useEffect(()=>{
 
 
-    if(mode==='edit' && rowData){
+  useEffect(() => {
+
+    const data = {};
 
 
-      const d={};
+    doc.headers.forEach(header => {
 
 
-      doc.headers.forEach(h=>{
+      if(
+        mode === 'edit' &&
+        rowData
+      ){
 
-        d[h] =
-          rowData[h] !== undefined
-          ? String(rowData[h])
+        data[header] =
+          rowData[header] !== undefined
+          ? String(rowData[header])
           : '';
 
-      });
+      }
+      else{
+
+        data[header] = '';
+
+      }
+
+    });
 
 
-      setFormData(d);
-
-
-    }
-    else{
-
-
-      const d={};
-
-
-      doc.headers.forEach(h=>{
-
-        d[h]='';
-
-      });
-
-
-      setFormData(d);
-
-
-    }
-
-
+    setFormData(data);
     setErrors({});
 
 
@@ -296,15 +333,17 @@ export const EditSidePanel = ({
 
 
 
+  const handleChange = (
+    header,
+    value
+  ) => {
 
-  const handleChange=(header,val)=>{
 
-
-    setFormData(prev=>({
+    setFormData(prev => ({
 
       ...prev,
 
-      [header]:val
+      [header]:value
 
     }));
 
@@ -313,11 +352,15 @@ export const EditSidePanel = ({
     if(errors[header]){
 
 
-      setErrors(prev=>{
+      setErrors(prev => {
 
-        const updated={...prev};
+        const updated = {
+          ...prev
+        };
+
 
         delete updated[header];
+
 
         return updated;
 
@@ -334,11 +377,26 @@ export const EditSidePanel = ({
 
 
 
+  const handleCreateCategory = (
+    header,
+    value
+  ) => {
 
-  const handleCreateCategory=(header,value)=>{
+
+    const newValue =
+      value.trim();
 
 
-    setCustomCategories(prev=>{
+
+    if(!newValue){
+
+      return;
+
+    }
+
+
+
+    setCustomCategories(prev => {
 
 
       const existing =
@@ -346,7 +404,7 @@ export const EditSidePanel = ({
 
 
 
-      if(existing.includes(value)){
+      if(existing.includes(newValue)){
 
         return prev;
 
@@ -356,18 +414,15 @@ export const EditSidePanel = ({
 
       return {
 
-
         ...prev,
-
 
         [header]:[
 
           ...existing,
 
-          value
+          newValue
 
         ]
-
 
       };
 
@@ -382,93 +437,129 @@ export const EditSidePanel = ({
 
 
 
-
-
   const validate = () => {
 
-  const errs = {};
+    const errs = {};
 
 
-  const allEmpty = doc.headers.every(
-    h => !formData[h] || formData[h].trim() === ''
-  );
+
+    const allEmpty = doc.headers.every(
+      h =>
+        !formData[h] ||
+        formData[h].trim() === ''
+    );
 
 
-  // Stop completely empty rows
-  if(allEmpty){
 
-    errs._row = "At least one field must be filled.";
+    if(allEmpty){
+
+      errs._row =
+        "At least one field must be filled.";
+
+      return errs;
+
+    }
+
+
+
+
+    doc.headers.forEach(header => {
+
+
+      const value =
+        formData[header] || '';
+
+
+
+
+      if(
+        doc.requiredFields?.[header] &&
+        value.trim() === ''
+      ){
+
+        errs[header] =
+          "This field cannot be empty.";
+
+      }
+
+
+
+
+
+      if(
+        doc.colTypes[header] === 'number' &&
+        value !== '' &&
+        isNaN(Number(value))
+      ){
+
+        errs[header] =
+          "Only numbers allowed.";
+
+      }
+
+
+
+
+
+      if(
+        doc.colTypes[header] === 'date' &&
+        value !== ''
+      ){
+
+
+        const regex =
+          /^\d{2}\/\d{2}\/\d{4}$/;
+
+
+
+        if(!regex.test(value)){
+
+          errs[header] =
+            "Use DD/MM/YYYY";
+
+        }
+
+      }
+
+
+    });
+
+
 
     return errs;
 
-  }
+  };
 
 
 
-  // Required fields check
-  doc.headers.forEach(h=>{
 
-    const value = formData[h];
+
+
+  const handleSave = async () => {
+
+
+    const validationErrors =
+      validate();
+
 
 
     if(
-      doc.requiredFields?.[h] &&
-      (!value || value.trim()==='')
+      Object.keys(validationErrors).length > 0
     ){
 
-      errs[h]="This field cannot be empty.";
-
-    }
-
-
-
-    // number validation
-
-    if(
-      doc.colTypes[h]==='number'
-      &&
-      value !== ''
-      &&
-      isNaN(Number(value))
-    ){
-
-      errs[h]="Only numbers allowed.";
-
-    }
-
-
-  });
-
-
-  return errs;
-
-};
-
-
-
-
-
-  const handleSave=async()=>{
-
-
-    const errs=validate();
-
-
-
-    if(Object.keys(errs).length > 0){
-
-      setErrors(errs);
+      setErrors(validationErrors);
 
 
       toast.error(
-      'Validation Failed',
-      errs._row || 'Please fix the errors before saving.'
+        "Validation Failed",
+        validationErrors._row ||
+        "Fix errors before saving."
       );
 
 
       return;
 
-      }
+    }
 
 
 
@@ -482,37 +573,31 @@ export const EditSidePanel = ({
       await onSave(formData);
 
 
-
       toast.success(
-        mode==='edit'
-        ? 'Record Updated'
-        : 'Record Added',
-
-        'Changes processed successfully.'
+        mode === 'edit'
+        ? "Record Updated"
+        : "Record Added",
+        "Changes saved successfully."
       );
-
 
 
       onClose();
 
 
-
     }
-    catch(err){
+    catch(error){
 
 
       toast.error(
-        'Save Failed',
-        err.message
+        "Save Failed",
+        error.message
       );
 
 
     }
     finally{
 
-
       setSaving(false);
-
 
     }
 
@@ -523,16 +608,9 @@ export const EditSidePanel = ({
 
 
 
-  const isAddMode = mode==='add';
-
-
-
-
-
   return (
 
     <>
-
 
       <div
         className="side-panel-overlay"
@@ -542,7 +620,6 @@ export const EditSidePanel = ({
 
 
       <aside className="side-panel">
-
 
 
         <div className="side-panel-header">
@@ -560,20 +637,19 @@ export const EditSidePanel = ({
             >
 
               {
-                isAddMode
+                mode === 'add'
                 ?
                 <PlusIcon size={16}/>
                 :
                 <EditIcon size={16}/>
               }
 
-
             </div>
 
 
 
             {
-              isAddMode
+              mode === 'add'
               ?
               'Add New Record'
               :
@@ -581,9 +657,7 @@ export const EditSidePanel = ({
             }
 
 
-
           </div>
-
 
 
 
@@ -605,70 +679,65 @@ export const EditSidePanel = ({
 
         <div className="side-panel-body">
 
-
           <div className="form-grid single-col">
 
 
-          {
-            doc.headers.map(h=>(
+            {
+              doc.headers.map(header => (
 
+                <FormField
 
-              <FormField
+                  key={header}
 
-                key={h}
+                  header={header}
 
-                header={h}
+                  colType={
+                    doc.colTypes[header]
+                  }
 
-                colType={doc.colTypes[h]}
+                  value={
+                    formData[header]
+                  }
 
-                value={formData[h]}
+                  onChange={
+                    handleChange
+                  }
 
-                onChange={handleChange}
+                  error={
+                    errors[header]
+                  }
 
-                error={errors[h]}
+                  isCategorical={
+                    detectCategorical(
+                      header,
+                      doc.rows,
+                      doc.colTypes
+                    )
+                  }
 
+                  categoryValues={
+                    [
+                      ...(categoryValues[header] || []),
+                      ...(customCategories?.[header] || [])
+                    ]
+                    .filter(
+                      (v,i,a)=>
+                        a.indexOf(v)===i
+                    )
+                  }
 
-                isCategorical={
-                  detectCategorical(
-                    h,
-                    doc.rows,
-                    doc.colTypes
-                  )
-                }
+                  onCreateCategory={
+                    handleCreateCategory
+                  }
 
+                />
 
-                categoryValues={
+              ))
 
-                  [
-                    ...(categoryValues[h] || []),
-                    ...(customCategories[h] || [])
-                  ]
-
-                  .filter(
-                    (value,index,array)=>
-                    array.indexOf(value)===index
-                  )
-
-                }
-
-
-
-                onCreateCategory={
-                  handleCreateCategory
-                }
-
-
-              />
-
-
-            ))
-
-          }
-
+            }
 
 
           </div>
-
 
         </div>
 
@@ -690,37 +759,28 @@ export const EditSidePanel = ({
 
 
 
-
           <button
-
             className="btn btn-primary btn-md"
-
             onClick={handleSave}
-
             disabled={saving}
-
           >
 
             {
               saving
               ?
-              'Saving…'
+              "Saving..."
               :
-              'Save Changes'
+              "Save Changes"
             }
 
 
           </button>
 
 
-
         </div>
 
 
-
-
       </aside>
-
 
 
     </>

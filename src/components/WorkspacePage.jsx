@@ -1,99 +1,145 @@
-import React, { useState, useMemo, useRef } from 'react';
-import { ArrowLeftIcon, FileSpreadIcon, PlusIcon, SearchIcon, EditIcon, TrashIcon } from './Icons';
+import React, {
+  useState,
+  useMemo,
+  useRef
+} from 'react';
+
+import {
+  ArrowLeftIcon,
+  FileSpreadIcon,
+  PlusIcon,
+  SearchIcon,
+  EditIcon,
+  TrashIcon
+} from './Icons';
+
 import { EditSidePanel } from './EditSidePanel';
 import { DeleteModal } from './DeleteModal';
+import { MergeModal } from './MergeModal';
+
 import { dataService } from '../services/dataService';
 import { useToast } from '../context/ToastContext';
 
-export const WorkspacePage = ({ doc, onBack, onUpdateDoc }) => {
+
+
+export const WorkspacePage = ({
+  doc,
+  onBack,
+  onUpdateDoc
+}) => {
+
+
   const toast = useToast();
+
 
   const fileInputRef = useRef(null);
 
-  const [rows, setRows] = useState(doc.rows);
-  const [search, setSearch] = useState('');
-  const [sortCol, setSortCol] = useState(null);
-  const [sortDir, setSortDir] = useState('asc');
-  const [page, setPage] = useState(1);
-  const [pageSize] = useState(10);
-  const [sidePanel, setSidePanel] = useState(null);
-  const [deleteTarget, setDeleteTarget] = useState(null);
-  const [customCategories, setCustomCategories] = useState({});
 
 
-  const processed = useMemo(() => {
+  const [rows,setRows] =
+    useState(doc.rows || []);
+
+
+  const [search,setSearch] =
+    useState('');
+
+
+  const [sidePanel,setSidePanel] =
+    useState(null);
+
+
+  const [deleteTarget,setDeleteTarget] =
+    useState(null);
+
+
+
+  const [mergeData,setMergeData] =
+    useState(null);
+
+
+
+  const [customCategories,setCustomCategories] =
+    useState({});
+
+
+
+  const [editingName,setEditingName] =
+    useState(false);
+
+
+
+  const [newName,setNewName] =
+    useState(doc.name);
+
+
+
+
+
+
+  const processed = useMemo(()=>{
+
 
     let data = [...rows];
 
-    if (search.trim()) {
 
-      const q = search.toLowerCase();
 
-      data = data.filter(row =>
-        doc.headers.some(header =>
-          String(row[header] || '')
+    if(search.trim()){
+
+
+      const query =
+        search.toLowerCase();
+
+
+
+      data =
+        data.filter(row =>
+
+
+          doc.headers.some(header =>
+
+
+            String(row[header] || '')
+
             .toLowerCase()
-            .includes(q)
-        )
-      );
+
+            .includes(query)
+
+
+          )
+
+
+        );
+
+
     }
 
-
-    if (sortCol) {
-
-      data.sort((a,b)=>{
-
-        const av = a[sortCol] ?? '';
-        const bv = b[sortCol] ?? '';
-
-        return sortDir === 'asc'
-          ? String(av).localeCompare(String(bv))
-          : String(bv).localeCompare(String(av));
-
-      });
-
-    }
 
 
     return data;
 
-  },[rows,search,sortCol,sortDir,doc]);
+
+  },[
+    rows,
+    search,
+    doc.headers
+  ]);
 
 
 
-  const paginated = processed.slice(
-    (page-1)*pageSize,
-    page*pageSize
-  );
 
 
 
-  const handleAdd = async(formData)=>{
-
-    const newRow = {
-      __id:crypto.randomUUID()
-    };
+  const handleRename = () => {
 
 
-    doc.headers.forEach(header=>{
+    if(!newName.trim()){
 
-      newRow[header] = formData[header] ?? '';
-
-    });
-
-
-
-    const hasValue = doc.headers.some(header =>
-      String(newRow[header]).trim() !== ''
-    );
-
-
-    if(!hasValue){
 
       toast.error(
-        "Empty Row",
-        "Please enter at least one value."
+        "Invalid Name",
+        "Sheet name cannot be empty."
       );
+
 
       return;
 
@@ -101,19 +147,105 @@ export const WorkspacePage = ({ doc, onBack, onUpdateDoc }) => {
 
 
 
+    onUpdateDoc({
+
+      ...doc,
+
+      name:newName.trim()
+
+    });
+
+
+
+    setEditingName(false);
+
+
+
+    toast.success(
+      "Renamed",
+      "Sheet name updated."
+    );
+
+
+  };
+
+
+
+
+
+
+
+  const handleAdd = async(formData)=>{
+
+
+    const newRow = {
+
+      __id:crypto.randomUUID()
+
+    };
+
+
+
+    doc.headers.forEach(header=>{
+
+
+      newRow[header] =
+        formData[header] || '';
+
+
+    });
+
+
+
+
+    const hasValue =
+      doc.headers.some(header =>
+
+        String(newRow[header]).trim() !== ''
+
+      );
+
+
+
+    if(!hasValue){
+
+
+      toast.error(
+        "Empty Row",
+        "Please enter at least one value."
+      );
+
+
+      return;
+
+    }
+
+
+
+
+
     const updatedRows = [
+
       ...rows,
+
       newRow
+
     ];
+
 
 
     setRows(updatedRows);
 
 
+
     onUpdateDoc({
+
       ...doc,
+
       rows:updatedRows
+
     });
+
 
   };
 
@@ -121,58 +253,91 @@ export const WorkspacePage = ({ doc, onBack, onUpdateDoc }) => {
 
   const handleEdit = async(formData)=>{
 
-    const rowId = sidePanel.row.__id;
+
+    const rowId =
+      sidePanel.row.__id;
 
 
-    const updatedRow = await dataService.updateRow(
-      doc.id,
-      rowId,
-      {
-        ...formData,
-        __id:rowId
-      }
-    );
+
+    const updatedRow =
+      await dataService.updateRow(
+
+        doc.id,
+
+        rowId,
+
+        {
+          ...formData,
+          __id:rowId
+        }
+
+      );
 
 
-    const updatedRows = rows.map(row =>
-      row.__id === rowId
-      ? updatedRow
-      : row
-    );
+
+    const updatedRows =
+      rows.map(row =>
+
+
+        row.__id === rowId
+
+        ?
+
+        updatedRow
+
+        :
+
+        row
+
+
+      );
+
 
 
     setRows(updatedRows);
 
 
+
     onUpdateDoc({
+
       ...doc,
+
       rows:updatedRows
+
     });
+
 
   };
 
 
-
-  const handleDelete = async()=>{
-
-    const rowId = deleteTarget.__id;
+  const handleDelete = ()=>{
 
 
-    const updatedRows = rows.filter(
-      row => row.__id !== rowId
-    );
+    const updatedRows =
+      rows.filter(row =>
+
+        row.__id !== deleteTarget.__id
+
+      );
+
 
 
     setRows(updatedRows);
 
 
+
     onUpdateDoc({
+
       ...doc,
+
       rows:updatedRows
+
     });
 
 
+
     setDeleteTarget(null);
+
 
 
     toast.success(
@@ -180,46 +345,49 @@ export const WorkspacePage = ({ doc, onBack, onUpdateDoc }) => {
       "Record removed."
     );
 
+
   };
 
 
+  const handleCSVSelect = async(file)=>{
 
-  const handleMerge = async(file)=>{
 
     if(!file) return;
 
 
+
     try{
 
-      const {
-        headers,
-        rows:newRows
-      } = await dataService.parseFile(file);
+
+      const parsed =
+        await dataService.parseFile(file);
 
 
 
-      const columnsMatch =
-        headers.length === doc.headers.length &&
-        headers.every(header =>
-          doc.headers.includes(header)
-        );
+      setMergeData(parsed);
 
 
 
-      if(!columnsMatch){
-
-        toast.error(
-          "Column mismatch",
-          "CSV columns must match the existing document."
-        );
-
-        return;
-
-      }
+    }
+    catch(error){
 
 
+      toast.error(
+        "CSV Error",
+        error.message
+      );
 
-      const formattedRows = newRows.map(row=>({
+
+    }
+
+
+  };
+
+    const handleMergeSelected = (selectedRows) => {
+
+
+    const formattedRows =
+      selectedRows.map(row => ({
 
         ...row,
 
@@ -229,45 +397,44 @@ export const WorkspacePage = ({ doc, onBack, onUpdateDoc }) => {
 
 
 
-      const mergedRows = [
-        ...rows,
-        ...formattedRows
-      ];
+    const updatedRows = [
+
+      ...rows,
+
+      ...formattedRows
+
+    ];
 
 
 
-      setRows(mergedRows);
+    setRows(updatedRows);
 
 
 
-      onUpdateDoc({
+    onUpdateDoc({
 
-        ...doc,
+      ...doc,
 
-        rows:mergedRows
+      rows:updatedRows
 
-      });
-
-
-
-      toast.success(
-        "CSV Merged",
-        `${formattedRows.length} rows added successfully`
-      );
+    });
 
 
-    }
-    catch(error){
 
-      toast.error(
-        "Merge Failed",
-        error.message
-      );
+    setMergeData(null);
 
-    }
+
+
+    toast.success(
+
+      "CSV Merged",
+
+      `${formattedRows.length} rows added successfully.`
+
+    );
+
 
   };
-
 
 
   return (
@@ -275,63 +442,168 @@ export const WorkspacePage = ({ doc, onBack, onUpdateDoc }) => {
     <div className="app-shell">
 
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".csv,.xlsx,.xls"
-        hidden
-        onChange={(e)=>handleMerge(e.target.files[0])}
-      />
 
+      <input
+
+        ref={fileInputRef}
+
+        type="file"
+
+        accept=".csv,.xlsx,.xls"
+
+        hidden
+
+        onChange={(e)=>{
+
+          handleCSVSelect(
+            e.target.files[0]
+          );
+
+
+          e.target.value = '';
+
+        }}
+
+      />
 
 
       <div className="workspace-header">
 
 
+
         <button
+
           className="workspace-back-btn"
+
           onClick={onBack}
+
         >
 
           <ArrowLeftIcon size={14}/>
+
           Back
 
         </button>
 
 
-
         <div className="workspace-title">
 
+
           <FileSpreadIcon size={18}/>
-          {doc.name}
+
+
+
+          {
+            editingName
+
+            ?
+
+            <input
+
+              className="form-input"
+
+              value={newName}
+
+              autoFocus
+
+              onChange={
+                e=>setNewName(e.target.value)
+              }
+
+              onKeyDown={
+                e=>{
+
+                  if(e.key==="Enter"){
+
+                    handleRename();
+
+                  }
+
+                }
+              }
+
+            />
+
+            :
+
+            <>
+
+              <span>
+                {doc.name}
+              </span>
+
+
+              <button
+
+                className="btn btn-ghost btn-sm"
+
+                onClick={()=>{
+
+                  setNewName(doc.name);
+
+                  setEditingName(true);
+
+                }}
+
+              >
+
+                Edit
+
+              </button>
+
+
+            </>
+
+          }
+
 
         </div>
-
-
 
         <div className="workspace-actions">
 
 
           <button
+
             className="btn btn-secondary btn-sm"
-            onClick={()=>setSidePanel({mode:'add'})}
+
+            onClick={()=>
+
+
+              setSidePanel({
+
+                mode:'add'
+
+              })
+
+
+            }
+
           >
 
             <PlusIcon size={14}/>
+
             Add Row
+
 
           </button>
 
-
-
           <button
+
             className="btn btn-primary btn-sm"
-            onClick={()=>fileInputRef.current?.click()}
+
+            onClick={()=>
+
+              fileInputRef.current?.click()
+
+            }
+
           >
 
             Merge CSV
 
+
           </button>
+
 
 
         </div>
@@ -339,13 +611,11 @@ export const WorkspacePage = ({ doc, onBack, onUpdateDoc }) => {
 
       </div>
 
-
-
-
       <div className="toolbar">
 
 
         <div className="search-input-wrap">
+
 
           <SearchIcon size={15}/>
 
@@ -358,9 +628,12 @@ export const WorkspacePage = ({ doc, onBack, onUpdateDoc }) => {
 
             value={search}
 
-            onChange={e=>setSearch(e.target.value)}
+            onChange={
+              e=>setSearch(e.target.value)
+            }
 
           />
+
 
         </div>
 
@@ -369,13 +642,30 @@ export const WorkspacePage = ({ doc, onBack, onUpdateDoc }) => {
 
 
 
-
       <div
+
         className="table-card"
-        style={{margin:'2rem'}}
+
+        style={{
+          margin:'2rem'
+        }}
+
       >
 
-        <div className="table-wrap">
+
+        <div
+
+          className="table-wrap"
+
+          style={{
+
+            maxHeight:'70vh',
+
+            overflowY:'auto'
+
+          }}
+
+        >
 
 
           <table className="data-table">
@@ -383,92 +673,129 @@ export const WorkspacePage = ({ doc, onBack, onUpdateDoc }) => {
 
             <thead>
 
+
               <tr>
 
-                {doc.headers.map(header=>(
 
-                  <th key={header}>
-                    {header}
-                  </th>
+                {
+                  doc.headers.map(header=>(
 
-                ))}
+                    <th key={header}>
+
+                      {header}
+
+                    </th>
+
+                  ))
+                }
 
 
                 <th>
+
                   Actions
+
                 </th>
 
 
               </tr>
 
+
             </thead>
+
+
 
 
 
             <tbody>
 
 
-              {paginated.map(row=>(
+              {
+                processed.map(row=>(
 
 
-                <tr key={row.__id}>
+                  <tr key={row.__id}>
 
 
-                  {doc.headers.map(header=>(
+                    {
+                      doc.headers.map(header=>(
 
-                    <td key={header}>
-                      {String(row[header] || '')}
+
+                        <td key={header}>
+
+                          {
+                            String(
+                              row[header] || ''
+                            )
+                          }
+
+                        </td>
+
+
+                      ))
+                    }
+
+
+
+                    <td>
+
+
+                      <button
+
+                        className="btn btn-ghost btn-icon btn-sm"
+
+                        onClick={()=>
+
+
+                          setSidePanel({
+
+                            mode:'edit',
+
+                            row
+
+                          })
+
+
+                        }
+
+                      >
+
+                        <EditIcon size={14}/>
+
+                      </button>
+
+
+                      <button
+
+                        className="btn btn-ghost btn-icon btn-sm"
+
+                        style={{
+                          color:'var(--danger-500)'
+                        }}
+
+                        onClick={()=>
+
+
+                          setDeleteTarget(row)
+
+
+                        }
+
+                      >
+
+                        <TrashIcon size={14}/>
+
+                      </button>
+
+
                     </td>
 
-                  ))}
+
+                  </tr>
 
 
+                ))
 
-                  <td className="actions-col">
-
-
-                    <button
-
-                      className="btn btn-ghost btn-icon btn-sm"
-
-                      onClick={()=>setSidePanel({
-                        mode:'edit',
-                        row
-                      })}
-
-                    >
-
-                      <EditIcon size={14}/>
-
-                    </button>
-
-
-
-
-                    <button
-
-                      className="btn btn-ghost btn-icon btn-sm"
-
-                      style={{
-                        color:'var(--danger-500)'
-                      }}
-
-                      onClick={()=>setDeleteTarget(row)}
-
-                    >
-
-                      <TrashIcon size={14}/>
-
-                    </button>
-
-
-                  </td>
-
-
-                </tr>
-
-
-              ))}
+              }
 
 
             </tbody>
@@ -483,60 +810,134 @@ export const WorkspacePage = ({ doc, onBack, onUpdateDoc }) => {
       </div>
 
 
+      {
+        sidePanel && (
 
 
-      {sidePanel && (
+          <EditSidePanel
 
-        <EditSidePanel
 
-          mode={sidePanel.mode}
+            mode={sidePanel.mode}
 
-          doc={{
-            ...doc,
-            rows
-          }}
 
-          rowData={sidePanel.row}
+            doc={{
 
-          onClose={()=>setSidePanel(null)}
+              ...doc,
 
-          onSave={
-            sidePanel.mode === 'add'
-            ? handleAdd
-            : handleEdit
-          }
+              rows
 
-          customCategories={customCategories}
-
-          setCustomCategories={setCustomCategories}
-
-        />
-
-      )}
+            }}
 
 
 
+            rowData={sidePanel.row}
 
-      {deleteTarget && (
 
-        <DeleteModal
 
-          row={deleteTarget}
+            onClose={()=>setSidePanel(null)}
 
-          headers={doc.headers}
 
-          onClose={()=>setDeleteTarget(null)}
 
-          onConfirm={handleDelete}
+            onSave={
 
-        />
+              sidePanel.mode === 'add'
 
-      )}
+              ?
+
+              handleAdd
+
+              :
+
+              handleEdit
+
+            }
+
+
+
+            customCategories={customCategories}
+
+
+
+            setCustomCategories={
+              setCustomCategories
+            }
+
+
+          />
+
+
+        )
+
+      }
+
+
+
+      {
+        deleteTarget && (
+
+
+          <DeleteModal
+
+
+            row={deleteTarget}
+
+
+
+            headers={doc.headers}
+
+
+
+            onClose={()=>
+              setDeleteTarget(null)
+            }
+
+
+
+            onConfirm={handleDelete}
+
+
+          />
+
+
+        )
+
+      }
+
+
+
+      {
+        mergeData && (
+
+
+          <MergeModal
+
+
+            fileData={mergeData}
+
+
+            existingDoc={doc}
+
+
+
+            onClose={()=>setMergeData(null)}
+
+
+
+            onMerge={handleMergeSelected}
+
+
+          />
+
+
+        )
+
+      }
 
 
 
     </div>
 
   );
+
 
 };
