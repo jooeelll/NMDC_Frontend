@@ -1,44 +1,228 @@
 import React, { useState } from 'react';
 import { TrashIcon } from './Icons';
 
-export const DeleteModal = ({ row, headers, onClose, onConfirm }) => {
+export const DeleteModal = ({
+  row,
+  document,
+  headers = [],
+  type = "record",
+  onClose,
+  onConfirm
+}) => {
+
   const [deleting, setDeleting] = useState(false);
-  const previewFields = headers.slice(0, 4);
+
+  const isDocument = type === "document";
 
   const handleConfirm = async () => {
     setDeleting(true);
     await onConfirm();
   };
 
+
+  const previewFields = headers.slice(0, 4);
+
+
   return (
-    <div className="modal-overlay" id="delete-modal-overlay">
-      <div className="modal" style={{ maxWidth: 460 }}>
-        <div className="modal-body" style={{ paddingTop: '1.75rem', textAlign: 'center' }}>
+    <div 
+      className="modal-overlay" 
+      id="delete-modal-overlay"
+      onClick={onClose}
+    >
+
+      <div 
+        className="modal" 
+        style={{ maxWidth: 460 }}
+        onClick={(e) => e.stopPropagation()}
+      >
+
+        <div 
+          className="modal-body" 
+          style={{ 
+            paddingTop: '1.75rem', 
+            textAlign: 'center' 
+          }}
+        >
+
           <div className="delete-icon-wrap">
-            <TrashIcon size={24} style={{ color: 'var(--danger-500)' }} />
+
+            <TrashIcon 
+              size={24} 
+              style={{ color: 'var(--danger-500)' }} 
+            />
+
           </div>
-          <div className="delete-modal-title">Delete This Record?</div>
+
+
+          <div className="delete-modal-title">
+
+            {isDocument 
+              ? "Delete Database?" 
+              : "Delete This Record?"
+            }
+
+          </div>
+
+
+
           <div className="delete-modal-subtitle">
-            This action cannot be undone. The record will be permanently removed from your dataset.
+
+            {isDocument 
+              ? "This action cannot be undone. The database and all its records will be permanently removed."
+              : "This action cannot be undone. The record will be permanently removed from your dataset."
+            }
+
           </div>
-          <div className="delete-modal-preview" style={{ textAlign: 'left' }}>
-            {previewFields.map(h => (
-              <div key={h} style={{ marginBottom: '.3rem' }}>
-                <span style={{ color: 'var(--teal-400)', fontWeight: 600, fontSize: '.75rem' }}>{h}:</span>{' '}
-                <span style={{ color: 'var(--slate-300)' }}>{String(row[h] || '—')}</span>
+
+
+
+
+          {/* DATABASE PREVIEW */}
+
+          {isDocument && document && (
+
+            <div 
+              className="delete-modal-preview"
+              style={{ textAlign: 'left' }}
+            >
+
+              <div style={{ marginBottom: '.3rem' }}>
+
+                <span 
+                  style={{ 
+                    color: 'var(--teal-400)', 
+                    fontWeight: 600, 
+                    fontSize: '.75rem' 
+                  }}
+                >
+                  Database:
+                </span>
+
+                {' '}
+
+                <span style={{ color: 'var(--slate-300)' }}>
+                  {document.name}
+                </span>
+
               </div>
-            ))}
-          </div>
-          <div className="delete-modal-footer" style={{ justifyContent: 'center' }}>
-            <button className="btn btn-secondary btn-md" onClick={onClose} id="cancel-delete-btn" style={{ flex: 1 }}>
+
+
+              <div>
+
+                <span 
+                  style={{ 
+                    color: 'var(--teal-400)', 
+                    fontWeight: 600, 
+                    fontSize: '.75rem' 
+                  }}
+                >
+                  Records:
+                </span>
+
+                {' '}
+
+                <span style={{ color: 'var(--slate-300)' }}>
+                  {document.rows?.length || 0} rows
+                </span>
+
+              </div>
+
+            </div>
+
+          )}
+
+
+
+
+
+          {/* RECORD PREVIEW */}
+
+          {!isDocument && row && (
+
+            <div 
+              className="delete-modal-preview" 
+              style={{ textAlign: 'left' }}
+            >
+
+              {previewFields.map(h => (
+
+                <div 
+                  key={h} 
+                  style={{ marginBottom: '.3rem' }}
+                >
+
+                  <span 
+                    style={{ 
+                      color: 'var(--teal-400)', 
+                      fontWeight: 600, 
+                      fontSize: '.75rem' 
+                    }}
+                  >
+                    {h}:
+                  </span>
+
+                  {' '}
+
+                  <span 
+                    style={{ 
+                      color: 'var(--slate-300)' 
+                    }}
+                  >
+                    {String(row[h] || '—')}
+                  </span>
+
+                </div>
+
+              ))}
+
+            </div>
+
+          )}
+
+
+
+
+
+          <div 
+            className="delete-modal-footer" 
+            style={{ justifyContent: 'center' }}
+          >
+
+            <button 
+              className="btn btn-secondary btn-md"
+              onClick={onClose}
+              id="cancel-delete-btn"
+              style={{ flex: 1 }}
+            >
               Cancel
             </button>
-            <button className="btn btn-danger btn-md" onClick={handleConfirm} disabled={deleting} style={{ flex: 1 }}>
-              {deleting ? 'Deleting…' : 'Confirm Delete'}
+
+
+
+            <button 
+              className="btn btn-danger btn-md"
+              onClick={handleConfirm}
+              disabled={deleting}
+              style={{ flex: 1 }}
+            >
+
+              {deleting 
+                ? 'Deleting…' 
+                : 'Confirm Delete'
+              }
+
             </button>
+
+
           </div>
+
+
         </div>
+
+
       </div>
+
+
     </div>
   );
 };

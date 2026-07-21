@@ -3,6 +3,7 @@ import { UploadIcon, FileSpreadIcon, TrashIcon, ChevronRightIcon, PlusIcon } fro
 import { CreateDocumentModal } from './CreateDocumentModal';
 import { dataService } from '../services/dataService';
 import { useToast } from '../context/ToastContext';
+import { DeleteModal } from './DeleteModal';
 
 export const LandingPage = ({ documents, onOpenDoc, onAddDoc, onDeleteDoc }) => {
   const toast = useToast();
@@ -10,6 +11,7 @@ export const LandingPage = ({ documents, onOpenDoc, onAddDoc, onDeleteDoc }) => 
   const [parsing, setParsing] = useState(false);
   const [showManualCreate, setShowManualCreate] = useState(false);
   const [sheetName,setSheetName] = useState(''); 
+  const [deleteTarget, setDeleteTarget] = useState(null);
   const fileInputRef = useRef(null);
 
   const handleFiles = async (files) => {
@@ -126,7 +128,7 @@ export const LandingPage = ({ documents, onOpenDoc, onAddDoc, onDeleteDoc }) => 
           <div key={doc.id} className="doc-card" onClick={() => onOpenDoc(doc)}>
             <div className="doc-card-header">
               <div className="doc-card-icon xlsx"><FileSpreadIcon size={22} /></div>
-              <button className="doc-card-menu-btn" onClick={(e) => { e.stopPropagation(); onDeleteDoc(doc.id); }}>
+              <button className="doc-card-menu-btn" onClick={(e) => {e.stopPropagation(); setDeleteTarget(doc)}}>
                 <TrashIcon size={15} />
               </button>
             </div>
@@ -161,9 +163,35 @@ export const LandingPage = ({ documents, onOpenDoc, onAddDoc, onDeleteDoc }) => 
 
         }}
 
-      />
+         />
 
-    )}
-    </main>
-  );
-};
+)}
+
+      {deleteTarget && (
+
+        <DeleteModal
+
+            item={deleteTarget}
+
+            type="document"
+
+            onClose={() => setDeleteTarget(null)}
+
+            onConfirm={() => {
+
+                onDeleteDoc(deleteTarget.id);
+
+                toast.success(
+                    "Database Deleted",
+                    `"${deleteTarget.name}" has been deleted successfully.`
+                );
+
+                setDeleteTarget(null);
+
+            }}
+
+        />
+
+        )}
+
+  </main> )}
