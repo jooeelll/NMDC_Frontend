@@ -46,6 +46,24 @@ function MainApp() {
     setActiveDoc(null);
   };
 
+  // ➕ ADD THIS HANDLER FUNCTION
+  const handleAddDoc = async (newDoc) => {
+    console.log('Data generated from Excel:', newDoc);
+    try {
+      // POST the newly imported document/concern to Django backend
+      await api.fetchWithAuth('/area_of_concerns/', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newDoc),
+      });
+      toast.success('Document Created', 'Excel data imported successfully!');
+      loadConcerns(); // Reload concerns from backend
+    } catch (error) {
+      console.error('Failed to create document:', error.message);
+      toast.error('Save Error', error.message);
+    }
+  };
+
   // Guard: If not logged in, show Login Screen
   if (!isAuthenticated) {
     return <LoginPage onLoginSuccess={(user) => setUsername(user)} />;
@@ -98,6 +116,7 @@ function MainApp() {
           documents={concerns}
           onOpenDoc={setActiveDoc}
           onRefreshData={loadConcerns}
+          onAddDoc={handleAddDoc}
         />
       )}
     </div>
