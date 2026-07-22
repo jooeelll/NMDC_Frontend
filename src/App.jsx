@@ -1,60 +1,113 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { LandingPage } from './components/LandingPage';
 import { WorkspacePage } from './components/WorkspacePage';
-import { ToastProvider } from './context/ToastContext';
+import { LoginPage } from './components/LoginPage';
+import { ToastProvider, useToast } from './context/ToastContext';
 import { AnchorIcon } from './components/Icons';
+import { api } from './services/api';
 import './index.css';
 
-const initialDoc = {
-  id: 'default',
-  name: 'NMDC_Vessel_Projects_2024.csv',
-  size: 4096,
-  uploadedAt: new Date().toISOString(),
-  headers: ['Vessel Name', 'Area', 'Status', 'Cost (AED)'],
-  colTypes: { 'Vessel Name': 'text', 'Area': 'text', 'Status': 'text', 'Cost (AED)': 'number' },
-  rows: [
-    { __id: '1', 'Vessel Name': 'Al Samha', 'Area': 'Abu Dhabi', 'Status': 'On Track', 'Cost (AED)': '1200000' },
-    { __id: '2', 'Vessel Name': 'Dalma', 'Area': 'Dubai', 'Status': 'Delayed', 'Cost (AED)': '450000' }
-  ]
-};
-
-function App() {
-  const [documents, setDocuments] = useState([initialDoc]);
+function MainApp() {
+  const toast = useToast();
+  const [username, setUsername] = useState(() => localStorage.getItem('username'));
+  const [concerns, setConcerns] = useState([]);
+  const [loading, setLoading] = useState(false);
   const [activeDoc, setActiveDoc] = useState(null);
 
-  return (
-    <ToastProvider>
-      <div className="app-shell">
-        <header className="topbar">
-          <div className="topbar-brand" onClick={() => setActiveDoc(null)}>
-            <div className="brand-icon"><AnchorIcon size={20} /></div>
-            <div>
-              <div className="brand-name">NMDC DocCenter</div>
-              <div className="brand-tagline">Marine Engineering Operations</div>
-            </div>
-          </div>
-        </header>
+  const isAuthenticated = Boolean(localStorage.getItem('access_token'));
 
-        {activeDoc ? (
-          <WorkspacePage
-            doc={activeDoc}
-            onBack={() => setActiveDoc(null)}
-            onUpdateDoc={(updated) => {
-              setDocuments(prev => prev.map(d => d.id === updated.id ? updated : d));
-              setActiveDoc(updated);
+  // FETCH CONCERNS FROM DJANGO BACKEND
+  const loadConcerns = async () => {
+    setLoading(true);
+    try {
+      // GET /api/area_of_concerns/ using JWT Bearer Token
+      const data = await api.fetchWithAuth('/area_of_concerns/');
+      console.log('Fetched user concerns from Django:', data);
+      setConcerns(data);
+    } catch (error) {
+      console.error('Failed to load concerns:', error.message);
+      toast.error('Data Fetch Error', error.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Trigger API fetch as soon as user is authenticated
+  useEffect(() => {
+    if (isAuthenticated) {
+      loadConcerns();
+    }
+  }, [isAuthenticated]);
+
+  const handleLogout = () => {
+    api.logout();
+    setUsername(null);
+    setConcerns([]);
+    setActiveDoc(null);
+  };
+
+  // Guard: If not logged in, show Login Screen
+  if (!isAuthenticated) {
+    return <LoginPage onLoginSuccess={(user) => setUsername(user)} />;
+  }
+
+  return (
+    <div className="app-shell">
+      <header className="topbar" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.8rem 1.5rem', background: '#0B2545', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
+        <div className="topbar-brand" onClick={() => setActiveDoc(null)} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+          <div className="brand-icon" style={{ color: '#0E9AA7' }}><AnchorIcon size={22} /></div>
+          <div>
+            <div className="brand-name" style={{ color: '#FFF', fontWeight: 700 }}>NMDC DocCenter</div>
+            <div className="brand-tagline" style={{ color: '#94A3B8', fontSize: '0.75rem' }}>Area of Concern System</div>
+          </div>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+          <span style={{ color: '#CBD5E1', fontSize: '0.85rem' }}>
+            User: <strong style={{ color: '#0E9AA7' }}>{username}</strong>
+          </span>
+          <button
+            onClick={handleLogout}
+            style={{
+              padding: '0.4rem 0.9rem',
+              background: 'transparent',
+              border: '1px solid rgba(255,255,255,0.2)',
+              borderRadius: '6px',
+              color: '#F87171',
+              fontSize: '0.8rem',
+              cursor: 'pointer'
             }}
-          />
-        ) : (
-          <LandingPage
-            documents={documents}
-            onOpenDoc={setActiveDoc}
-            onAddDoc={(doc) => setDocuments(prev => [doc, ...prev])}
-            onDeleteDoc={(id) => setDocuments(prev => prev.filter(d => d.id !== id))}
-          />
-        )}
-      </div>
-    </ToastProvider>
+          >
+            Sign Out
+          </button>
+        </div>
+      </header>
+
+      {loading ? (
+        <div style={{ padding: '3rem', textAlign: 'center', color: '#94A3B8' }}>
+          Loading user concerns from backend...
+        </div>
+      ) : activeDoc ? (
+        <WorkspacePage
+          doc={activeDoc}
+          onBack={() => setActiveDoc(null)}
+          onUpdateDoc={(updated) => setActiveDoc(updated)}
+        />
+      ) : (
+        <LandingPage
+          documents={concerns}
+          onOpenDoc={setActiveDoc}
+          onRefreshData={loadConcerns}
+        />
+      )}
+    </div>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <ToastProvider>
+      <MainApp />
+    </ToastProvider>
+  );
+}
