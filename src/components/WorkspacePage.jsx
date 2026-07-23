@@ -1,762 +1,361 @@
-import React, {
-  useState,
-  useMemo,
-  useRef
-} from 'react';
-
-import {
-  ArrowLeftIcon,
-  FileSpreadIcon,
-  PlusIcon,
-  SearchIcon,
-  EditIcon,
-  TrashIcon
-} from './Icons';
-
-import { EditSidePanel } from './EditSidePanel';
-import { DeleteModal } from './DeleteModal';
-import { MergeModal } from './MergeModal';
-
-import { dataService } from '../services/dataService';
-import { useToast } from '../context/ToastContext';
-
-
-
-export const WorkspacePage = ({
-  doc,
-  onBack,
-  onUpdateDoc
-}) => {
-
-
-  const toast = useToast();
-
-
-  const fileInputRef = useRef(null);
-
-
-
-  const [rows,setRows] =
-    useState(doc.rows || []);
-
-
-  const [search,setSearch] =
-    useState('');
-
-
-  const [sidePanel,setSidePanel] =
-    useState(null);
-
-
-  const [deleteTarget,setDeleteTarget] =
-    useState(null);
-
-
-
-  const [mergeData,setMergeData] =
-    useState(null);
-
-
-
-  const [customCategories,setCustomCategories] =
-    useState({});
-
-
-
-  const [editingName,setEditingName] =
-    useState(false);
-
-
-
-  const [newName,setNewName] =
-    useState(doc.name);
-
-
-
-
-
-
-  const processed = useMemo(()=>{
-
-
-    let data = [...rows];
-
-
-
-    if(search.trim()){
-
-
-      const query =
-        search.toLowerCase();
-
-
-
-      data =
-        data.filter(row =>
-
-
-          doc.headers.some(header =>
-
-
-            String(row[header] || '')
-
-            .toLowerCase()
-
-            .includes(query)
-
-
-          )
-
-
-        );
-
-
-    }
-
-
-
-    return data;
-
-
-  },[
-    rows,
-    search,
-    doc.headers
-  ]);
-
-
-
-
-
-
-  const handleRename = () => {
-
-
-    if(!newName.trim()){
-
-
-      toast.error(
-        "Invalid Name",
-        "Sheet name cannot be empty."
-      );
-
-
-      return;
-
-    }
-
-
-
-    onUpdateDoc({
-
-      ...doc,
-
-      name:newName.trim()
-
-    });
-
-
-
-    setEditingName(false);
-
-
-
-    toast.success(
-      "Renamed",
-      "Sheet name updated."
-    );
-
-
-  };
-
-
-
-
-
-
-
-  const handleAdd = async(formData)=>{
-
-
-    const newRow = {
-
-      __id:crypto.randomUUID()
-
-    };
-
-
-
-    doc.headers.forEach(header=>{
-
-
-      newRow[header] =
-        formData[header] || '';
-
-
-    });
-
-
-
-
-    const hasValue =
-      doc.headers.some(header =>
-
-        String(newRow[header]).trim() !== ''
-
-      );
-
-
-
-    if(!hasValue){
-
-
-      toast.error(
-        "Empty Row",
-        "Please enter at least one value."
-      );
-
-
-      return;
-
-    }
-
-
-
-
-
-    const updatedRows = [
-
-      ...rows,
-
-      newRow
-
+import React,{useState,useRef} from 'react';
+import {PlusIcon,EditIcon,TrashIcon,SearchIcon} from './Icons';
+import {EditSidePanel} from './EditSidePanel';
+import {DeleteModal} from './DeleteModal';
+import {api} from '../services/api';
+import {useToast} from '../context/ToastContext';
+
+export const WorkspacePage=({
+  concerns,
+  setConcerns,
+  refreshConcerns
+})=>{
+
+  const toast=useToast();
+  const fileInputRef=useRef(null);
+
+  const [search,setSearch]=useState('');
+  const [sidePanel,setSidePanel]=useState(null);
+  const [deleteTarget,setDeleteTarget]=useState(null);
+
+  const headers=concerns.length>0
+    ?Object.keys(concerns[0]).filter(
+      key=>
+        key!=='id'&&
+        key!=='user'&&
+        key!=='created_at'&&
+        key!=='updated_at'
+    )
+    :[
+      'date',
+      'sl_no',
+      'area',
+      'area_of_concern',
+      'milestone_delay_days',
+      'action_by',
+      'action_required'
     ];
 
-
-
-    setRows(updatedRows);
-
-
-
-    onUpdateDoc({
-
-      ...doc,
-
-      rows:updatedRows
-
-    });
-
-
+  const colTypes={
+    date:'date',
+    sl_no:'number',
+    area:'text',
+    area_of_concern:'text',
+    milestone_delay_days:'number',
+    action_by:'text',
+    action_required:'text'
   };
 
+  const filteredRows=concerns.filter(row=>{
 
+    if(!search.trim()){
+      return true;
+    }
 
-  const handleEdit = async(formData)=>{
-
-
-    const rowId =
-      sidePanel.row.__id;
-
-
-
-    const updatedRow =
-      await dataService.updateRow(
-
-        doc.id,
-
-        rowId,
-
-        {
-          ...formData,
-          __id:rowId
-        }
-
-      );
-
-
-
-    const updatedRows =
-      rows.map(row =>
-
-
-        row.__id === rowId
-
-        ?
-
-        updatedRow
-
-        :
-
-        row
-
-
-      );
-
-
-
-    setRows(updatedRows);
-
-
-
-    onUpdateDoc({
-
-      ...doc,
-
-      rows:updatedRows
-
-    });
-
-
-  };
-
-
-  const handleDelete = ()=>{
-
-
-    const updatedRows =
-      rows.filter(row =>
-
-        row.__id !== deleteTarget.__id
-
-      );
-
-
-
-    setRows(updatedRows);
-
-
-
-    onUpdateDoc({
-
-      ...doc,
-
-      rows:updatedRows
-
-    });
-
-
-
-    setDeleteTarget(null);
-
-
-
-    toast.success(
-      "Deleted",
-      "Record removed."
+    return headers.some(header=>
+      String(row[header]||'')
+      .toLowerCase()
+      .includes(search.toLowerCase())
     );
 
-
-  };
-
-
-  const handleCSVSelect = async(file)=>{
+  });
 
 
-    if(!file) return;
-
-
+  const handleAdd=async(formData)=>{
 
     try{
 
+      const response=
+        await api.fetchWithAuth(
+          '/area_of_concerns/',
+          {
+            method:'POST',
+            body:JSON.stringify(formData)
+          }
+        );
 
-      const parsed =
-        await dataService.parseFile(file);
+
+      setConcerns(prev=>[
+        ...prev,
+        response
+      ]);
 
 
+      return true;
 
-      setMergeData(parsed);
-
-
-
-    }
-    catch(error){
-
+    }catch(error){
 
       toast.error(
-        "CSV Error",
+        "Add Failed",
         error.message
       );
 
 
-    }
+      return false;
 
+    }
 
   };
 
-    const handleMergeSelected = (selectedRows) => {
+
+  const handleEdit=async(formData)=>{
+
+    try{
+
+      const id=sidePanel.row.id;
 
 
-    const formattedRows =
-      selectedRows.map(row => ({
-
-        ...row,
-
-        __id:crypto.randomUUID()
-
-      }));
-
-
-
-    const updatedRows = [
-
-      ...rows,
-
-      ...formattedRows
-
-    ];
+      const response=
+        await api.fetchWithAuth(
+          `/area_of_concerns/${id}/`,
+          {
+            method:'PUT',
+            body:JSON.stringify(formData)
+          }
+        );
 
 
-
-    setRows(updatedRows);
-
-
-
-    onUpdateDoc({
-
-      ...doc,
-
-      rows:updatedRows
-
-    });
+      setConcerns(prev=>
+        prev.map(row=>
+          row.id===id
+          ?response
+          :row
+        )
+      );
 
 
+      return true;
 
-    setMergeData(null);
+    }catch(error){
+
+      toast.error(
+        "Update Failed",
+        error.message
+      );
 
 
+      return false;
 
-    toast.success(
+    }
 
-      "CSV Merged",
+  };
 
-      `${formattedRows.length} rows added successfully.`
 
+  const handleDelete=async()=>{
+
+    try{
+
+      await api.fetchWithAuth(
+        `/area_of_concerns/${deleteTarget.id}/`,
+        {
+          method:'DELETE'
+        }
+      );
+
+
+      setConcerns(prev=>
+        prev.filter(row=>
+          row.id!==deleteTarget.id
+        )
+      );
+
+
+      setDeleteTarget(null);
+
+
+      toast.success(
+        "Deleted",
+        "Record removed successfully."
+      );
+
+    }catch(error){
+
+      toast.error(
+        "Delete Failed",
+        error.message
+      );
+
+    }
+
+  };
+
+
+  const handleImport=async(file)=>{
+
+    const formData=new FormData();
+
+    formData.append(
+      'file',
+      file
     );
 
 
+    try{
+
+      await api.fetchWithAuth(
+        '/area_of_concerns/import_excel/',
+        {
+          method:'POST',
+          body:formData
+        }
+      );
+
+
+      await refreshConcerns();
+
+
+      toast.success(
+        "Import Complete",
+        "CSV imported successfully."
+      );
+
+
+    }catch(error){
+
+      toast.error(
+        "Import Failed",
+        error.message
+      );
+
+    }
+
   };
 
 
-  return (
+  return(
 
     <div className="app-shell">
 
-
-
       <input
-
         ref={fileInputRef}
-
         type="file"
-
-        accept=".csv,.xlsx,.xls"
-
         hidden
+        accept=".csv,.xlsx,.xls"
+        onChange={e=>{
 
-        onChange={(e)=>{
+          if(e.target.files[0]){
+            handleImport(e.target.files[0]);
+          }
 
-          handleCSVSelect(
-            e.target.files[0]
-          );
-
-
-          e.target.value = '';
+          e.target.value='';
 
         }}
-
       />
 
 
       <div className="workspace-header">
 
-
-
-        <button
-
-          className="workspace-back-btn"
-
-          onClick={onBack}
-
-        >
-
-          <ArrowLeftIcon size={14}/>
-
-          Back
-
-        </button>
-
-
         <div className="workspace-title">
-
-
-          <FileSpreadIcon size={18}/>
-
-
-
-          {
-            editingName
-
-            ?
-
-            <input
-
-              className="form-input"
-
-              value={newName}
-
-              autoFocus
-
-              onChange={
-                e=>setNewName(e.target.value)
-              }
-
-              onKeyDown={
-                e=>{
-
-                  if(e.key==="Enter"){
-
-                    handleRename();
-
-                  }
-
-                }
-              }
-
-            />
-
-            :
-
-            <>
-
-              <span>
-                {doc.name}
-              </span>
-
-
-              <button
-
-                className="btn btn-ghost btn-sm"
-
-                onClick={()=>{
-
-                  setNewName(doc.name);
-
-                  setEditingName(true);
-
-                }}
-
-              >
-
-                Edit
-
-              </button>
-
-
-            </>
-
-          }
-
-
+          Area of Concern
         </div>
+
 
         <div className="workspace-actions">
 
-
           <button
-
             className="btn btn-secondary btn-sm"
-
-            onClick={()=>
-
-
-              setSidePanel({
-
-                mode:'add'
-
-              })
-
-
-            }
-
+            onClick={()=>setSidePanel({
+              mode:'add'
+            })}
           >
 
             <PlusIcon size={14}/>
-
             Add Row
 
-
           </button>
+
 
           <button
-
             className="btn btn-primary btn-sm"
-
             onClick={()=>
-
-              fileInputRef.current?.click()
-
+              fileInputRef.current.click()
             }
-
           >
 
-            Merge CSV
-
+            Import CSV
 
           </button>
-
-
 
         </div>
 
-
       </div>
+
 
       <div className="toolbar">
 
-
         <div className="search-input-wrap">
-
 
           <SearchIcon size={15}/>
 
-
           <input
-
             className="search-input"
-
             placeholder="Filter sheet data..."
-
             value={search}
-
-            onChange={
-              e=>setSearch(e.target.value)
+            onChange={e=>
+              setSearch(e.target.value)
             }
-
           />
 
-
         </div>
-
 
       </div>
 
 
+      <div className="table-card">
 
-      <div
-
-        className="table-card"
-
-        style={{
-          margin:'2rem'
-        }}
-
-      >
-
-
-        <div
-
-          className="table-wrap"
-
-          style={{
-
-            maxHeight:'70vh',
-
-            overflowY:'auto'
-
-          }}
-
-        >
-
+        <div className="table-wrap">
 
           <table className="data-table">
 
-
             <thead>
-
 
               <tr>
 
-
                 {
-                  doc.headers.map(header=>(
+                  headers.map(header=>(
 
                     <th key={header}>
-
-                      {header}
-
+                      {header.replaceAll('_',' ')}
                     </th>
 
                   ))
                 }
 
-
                 <th>
-
                   Actions
-
                 </th>
 
-
               </tr>
-
 
             </thead>
 
 
-
-
-
             <tbody>
 
-
               {
-                processed.map(row=>(
+                filteredRows.map(row=>(
 
-
-                  <tr key={row.__id}>
-
+                  <tr key={row.id}>
 
                     {
-                      doc.headers.map(header=>(
-
+                      headers.map(header=>(
 
                         <td key={header}>
-
-                          {
-                            String(
-                              row[header] || ''
-                            )
-                          }
-
+                          {row[header]||''}
                         </td>
-
 
                       ))
                     }
 
 
-
                     <td>
 
-
                       <button
-
                         className="btn btn-ghost btn-icon btn-sm"
-
-                        onClick={()=>
-
-
-                          setSidePanel({
-
-                            mode:'edit',
-
-                            row
-
-                          })
-
-
-                        }
-
+                        onClick={()=>setSidePanel({
+                          mode:'edit',
+                          row
+                        })}
                       >
 
                         <EditIcon size={14}/>
@@ -765,179 +364,75 @@ export const WorkspacePage = ({
 
 
                       <button
-
                         className="btn btn-ghost btn-icon btn-sm"
-
                         style={{
                           color:'var(--danger-500)'
                         }}
-
-                        onClick={()=>
-
-
-                          setDeleteTarget(row)
-
-
-                        }
-
+                        onClick={()=>setDeleteTarget(row)}
                       >
 
                         <TrashIcon size={14}/>
 
                       </button>
 
-
                     </td>
 
-
                   </tr>
-
 
                 ))
 
               }
 
-
             </tbody>
-
 
           </table>
 
-
         </div>
-
 
       </div>
 
 
       {
-        sidePanel && (
-
+        sidePanel&&(
 
           <EditSidePanel
-
-
             mode={sidePanel.mode}
-
-
             doc={{
-
-              ...doc,
-
-              rows
-
+              headers,
+              rows:concerns,
+              colTypes
             }}
-
-
-
             rowData={sidePanel.row}
-
-
-
-            onClose={()=>setSidePanel(null)}
-
-
-
+            onClose={()=>
+              setSidePanel(null)
+            }
             onSave={
-
-              sidePanel.mode === 'add'
-
-              ?
-
-              handleAdd
-
-              :
-
-              handleEdit
-
+              sidePanel.mode==='add'
+              ?handleAdd
+              :handleEdit
             }
-
-
-
-            customCategories={customCategories}
-
-
-
-            setCustomCategories={
-              setCustomCategories
-            }
-
-
           />
 
-
         )
-
       }
 
 
-
       {
-        deleteTarget && (
-
+        deleteTarget&&(
 
           <DeleteModal
-
-
             row={deleteTarget}
-
-
-
-            headers={doc.headers}
-
-
-
             onClose={()=>
               setDeleteTarget(null)
             }
-
-
-
             onConfirm={handleDelete}
-
-
           />
 
-
         )
-
       }
-
-
-
-      {
-        mergeData && (
-
-
-          <MergeModal
-
-
-            fileData={mergeData}
-
-
-            existingDoc={doc}
-
-
-
-            onClose={()=>setMergeData(null)}
-
-
-
-            onMerge={handleMergeSelected}
-
-
-          />
-
-
-        )
-
-      }
-
-
 
     </div>
 
   );
-
 
 };
