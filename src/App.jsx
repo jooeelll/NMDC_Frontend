@@ -1,57 +1,94 @@
-import React,{useEffect,useState} from 'react';
-import {WorkspacePage} from './components/WorkspacePage';
-import {LoginPage} from './components/LoginPage';
-import {ToastProvider,useToast} from './context/ToastContext';
-import {AnchorIcon} from './components/Icons';
-import {api} from './services/api';
+import React, { useEffect, useState } from 'react';
+import { WorkspacePage } from './components/WorkspacePage';
+import { LoginPage } from './components/LoginPage';
+import { ToastProvider, useToast } from './context/ToastContext';
+import { AnchorIcon } from './components/Icons';
+import { api } from './services/api';
 import './index.css';
 
-function MainApp(){
-  const toast=useToast();
+function MainApp() {
+  const toast = useToast();
 
-  const [username,setUsername]=useState(()=>localStorage.getItem('username'));
-  const [concerns,setConcerns]=useState([]);
-  const [loading,setLoading]=useState(false);
+  const [username, setUsername] = useState(() => localStorage.getItem('username'));
+  const [concerns, setConcerns] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [isVerifying, setIsVerifying] = useState(true);
 
-  const isAuthenticated=Boolean(localStorage.getItem('access_token'));
+  // Managed auth state
+  const [isAuthenticated, setIsAuthenticated] = useState(() => 
+    Boolean(localStorage.getItem('access_token'))
+  );
 
-  const loadConcerns=async()=>{
+  const handleLogout = () => {
+    api.logout();
+    setUsername(null);
+    setConcerns([]);
+    setIsAuthenticated(false);
+  };
+
+  const loadConcerns = async () => {
     setLoading(true);
-    try{
-      const data=await api.fetchWithAuth('/area_of_concerns/');
+    try {
+      const data = await api.fetchWithAuth('/area_of_concerns/');
       setConcerns(data);
-    }catch(error){
-      toast.error("Fetch Error",error.message);
-    }finally{
+      return true;
+    } catch (error) {
+      // If backend returns 401/403 or invalid token, terminate session
+      toast.error("Session Expired", "Your authentication token is invalid or expired. Please sign in again.");
+      handleLogout();
+      return false;
+    } finally {
       setLoading(false);
     }
   };
 
-  useEffect(()=>{
-    if(isAuthenticated){
-      loadConcerns();
-    }
-  },[isAuthenticated]);
+  useEffect(() => {
+    const verifySession = async () => {
+      const token = localStorage.getItem('access_token');
+      if (token) {
+        // Authenticate token against backend by attempting to fetch data
+        await loadConcerns();
+      } else {
+        setIsAuthenticated(false);
+      }
+      setIsVerifying(false);
+    };
 
-  const handleLogout=()=>{
-    api.logout();
-    setUsername(null);
-    setConcerns([]);
+    verifySession();
+  }, []);
+
+  const handleLoginSuccess = (user) => {
+    setUsername(user);
+    setIsAuthenticated(true);
+    loadConcerns();
   };
 
-  if(!isAuthenticated){
-    return(
+  // 1. Initial Verification Spinner
+  if (isVerifying) {
+    return (
+      <div style={{ display: 'flex', height: '100vh', justifyContent: 'center', alignItems: 'center', background: '#0f172a', color: '#fff' }}>
+        <div>
+          <h3>Verifying Authentication Session...</h3>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Unauthenticated -> Show Login Page
+  if (!isAuthenticated) {
+    return (
       <LoginPage
-        onLoginSuccess={(user)=>setUsername(user)}
+        onLoginSuccess={handleLoginSuccess}
       />
     );
   }
 
-  return(
+  // 3. Authenticated -> Show Dashboard App Shell
+  return (
     <div className="app-shell">
       <header className="topbar">
         <div className="topbar-brand">
-          <AnchorIcon size={22}/>
+          <AnchorIcon size={22} />
           <div>
             <div className="brand-name">
               NMDC DocCenter
@@ -63,39 +100,36 @@ function MainApp(){
         </div>
 
         <div className="topbar-actions">
+          <div className="topbar-badge">
+            User: {username}
+          </div>
 
-        <div className="topbar-badge">
-          User: {username}
+          <button
+            className="btn btn-danger btn-sm"
+            onClick={handleLogout}
+          >
+            Sign Out
+          </button>
         </div>
-
-        <button
-          className="btn btn-danger btn-sm"
-          onClick={handleLogout}
-        >
-          Sign Out
-        </button>
-
-      </div>
-
       </header>
 
-      {loading?
-        <div>Loading...</div>
-        :
+      {loading ? (
+        <div style={{ padding: '2rem', textAlign: 'center' }}>Loading Workspace...</div>
+      ) : (
         <WorkspacePage
           concerns={concerns}
           setConcerns={setConcerns}
           refreshConcerns={loadConcerns}
         />
-      }
+      )}
     </div>
   );
 }
 
-export default function App(){
-  return(
+export default function App() {
+  return (
     <ToastProvider>
-      <MainApp/>
+      <MainApp />
     </ToastProvider>
   );
 }
