@@ -1,4 +1,4 @@
-const API_BASE_URL='http://localhost:8000/api';
+const API_BASE_URL = '/api';
 
 export const api={
 
@@ -7,6 +7,7 @@ export const api={
       method:'POST',
       headers:{
         'Content-Type':'application/json',
+        'ngrok-skip-browser-warning':'true',
       },
       body:JSON.stringify({
         username,
@@ -64,6 +65,7 @@ export const api={
     const headers={
       ...options.headers,
       Authorization:`Bearer ${token}`,
+      'ngrok-skip-browser-warning':'true',
     };
 
 
