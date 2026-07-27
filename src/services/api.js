@@ -100,8 +100,8 @@ export const api={
         .catch(()=>({}));
 
       throw new Error(
+        err.message||
         err.detail||
-        JSON.stringify(err)||
         `API request failed: ${response.status}`
       );
     }
