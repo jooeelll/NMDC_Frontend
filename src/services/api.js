@@ -34,6 +34,34 @@ export const api={
     return data;
   },
 
+  register:async(username,email,password)=>{
+    const response=await fetch(`${API_BASE_URL}/register/`,{
+      method:'POST',
+      headers:{
+        'Content-Type':'application/json',
+        'ngrok-skip-browser-warning':'true',
+      },
+      body:JSON.stringify({
+        username,
+        email,
+        password,
+      }),
+    });
+
+    if(!response.ok){
+      const errorData=await response.json().catch(()=>({}));
+
+      throw new Error(
+        errorData.username?.[0]||
+        errorData.email?.[0]||
+        errorData.password?.[0]||
+        errorData.detail||
+        'Registration failed. Please try again.'
+      );
+    }
+
+    return response.json();
+  },
 
   logout:()=>{
     localStorage.removeItem('access_token');

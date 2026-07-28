@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { WorkspacePage } from './components/WorkspacePage';
+import { SignupPage } from './components/SignupPage';
 import { LoginPage } from './components/LoginPage';
 import { ToastProvider, useToast } from './context/ToastContext';
 import { AnchorIcon } from './components/Icons';
@@ -11,6 +12,7 @@ function MainApp() {
 
   const [username, setUsername] = useState(() => localStorage.getItem('username'));
   const [concerns, setConcerns] = useState([]);
+  const [authView, setAuthView] = useState('login'); // 'login' | 'signup'
   const [loading, setLoading] = useState(false);
   const [isVerifying, setIsVerifying] = useState(true);
 
@@ -74,11 +76,20 @@ function MainApp() {
     );
   }
 
-  // 2. Unauthenticated -> Show Login Page
+// 2. Unauthenticated -> Show Login or Signup
   if (!isAuthenticated) {
+    if (authView === 'signup') {
+      return (
+        <SignupPage
+          onSignupSuccess={() => setAuthView('login')}
+          onSwitchToLogin={() => setAuthView('login')}
+        />
+      );
+    }
     return (
       <LoginPage
         onLoginSuccess={handleLoginSuccess}
+        onSwitchToSignup={() => setAuthView('signup')}
       />
     );
   }
