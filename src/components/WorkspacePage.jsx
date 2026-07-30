@@ -77,8 +77,14 @@ export const WorkspacePage=({
 
       setConcerns(prev=>[
         ...prev,
-        response
+        response.data
       ]);
+
+
+      toast.success(
+        "Added",
+        response.message||"Record added successfully."
+      );
 
 
       return true;
@@ -118,9 +124,15 @@ export const WorkspacePage=({
       setConcerns(prev=>
         prev.map(row=>
           row.id===id
-          ?response
+          ?response.data
           :row
         )
+      );
+
+
+      toast.success(
+        "Updated",
+        response.message||"Record updated successfully."
       );
 
 

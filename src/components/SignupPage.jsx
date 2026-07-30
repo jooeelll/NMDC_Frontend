@@ -3,9 +3,10 @@ import { AnchorIcon } from './Icons';
 import { useToast } from '../context/ToastContext';
 import { api } from '../services/api';
 
-export const LoginPage = ({ onLoginSuccess, onSwitchToSignup }) => {
+export const SignupPage = ({ onSignupSuccess, onSwitchToLogin }) => {
   const toast = useToast();
   const [username, setUsername] = useState('');
+  const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -14,14 +15,33 @@ export const LoginPage = ({ onLoginSuccess, onSwitchToSignup }) => {
     setLoading(true);
 
     try {
-      await api.login(username, password);
-      toast.success('Authentication Successful', `Logged in as ${username}`);
-      onLoginSuccess(username);
+      await api.register(username, email, password);
+      toast.success('Account Created', `You can now sign in as ${username}`);
+      onSignupSuccess(username);
     } catch (err) {
-      toast.error('Login Failed', err.message);
+      toast.error('Registration Failed', err.message);
     } finally {
       setLoading(false);
     }
+  };
+
+  const inputStyle = {
+    width: '100%',
+    padding: '0.75rem 1rem',
+    background: 'rgba(6, 15, 30, 0.6)',
+    border: '1px solid rgba(255, 255, 255, 0.12)',
+    borderRadius: '8px',
+    color: '#FFFFFF',
+    fontSize: '0.9rem',
+    outline: 'none'
+  };
+
+  const labelStyle = {
+    display: 'block',
+    color: '#CBD5E1',
+    fontSize: '0.85rem',
+    marginBottom: '0.4rem',
+    fontWeight: 500
   };
 
   return (
@@ -58,7 +78,7 @@ export const LoginPage = ({ onLoginSuccess, onSwitchToSignup }) => {
             <AnchorIcon size={26} />
           </div>
           <h1 style={{ color: '#FFFFFF', fontSize: '1.5rem', fontWeight: 700, margin: 0 }}>
-            NMDC Portal Login
+            Create Account
           </h1>
           <p style={{ color: '#94A3B8', fontSize: '0.85rem', marginTop: '0.35rem' }}>
             Area of Concern Tracking System
@@ -67,48 +87,39 @@ export const LoginPage = ({ onLoginSuccess, onSwitchToSignup }) => {
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.25rem' }}>
           <div>
-            <label style={{ display: 'block', color: '#CBD5E1', fontSize: '0.85rem', marginBottom: '0.4rem', fontWeight: 500 }}>
-              Username
-            </label>
+            <label style={labelStyle}>Username</label>
             <input
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter your username"
+              placeholder="Choose a username"
               required
-              style={{
-                width: '100%',
-                padding: '0.75rem 1rem',
-                background: 'rgba(6, 15, 30, 0.6)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                borderRadius: '8px',
-                color: '#FFFFFF',
-                fontSize: '0.9rem',
-                outline: 'none'
-              }}
+              style={inputStyle}
             />
           </div>
 
           <div>
-            <label style={{ display: 'block', color: '#CBD5E1', fontSize: '0.85rem', marginBottom: '0.4rem', fontWeight: 500 }}>
-              Password
-            </label>
+            <label style={labelStyle}>Email</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="you@example.com"
+              required
+              style={inputStyle}
+            />
+          </div>
+
+          <div>
+            <label style={labelStyle}>Password</label>
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="At least 8 characters"
               required
-              style={{
-                width: '100%',
-                padding: '0.75rem 1rem',
-                background: 'rgba(6, 15, 30, 0.6)',
-                border: '1px solid rgba(255, 255, 255, 0.12)',
-                borderRadius: '8px',
-                color: '#FFFFFF',
-                fontSize: '0.9rem',
-                outline: 'none'
-              }}
+              minLength={8}
+              style={inputStyle}
             />
           </div>
 
@@ -130,17 +141,17 @@ export const LoginPage = ({ onLoginSuccess, onSwitchToSignup }) => {
               transition: 'background 0.2s ease'
             }}
           >
-            {loading ? 'Authenticating...' : 'Sign In'}
+            {loading ? 'Creating Account...' : 'Sign Up'}
           </button>
         </form>
 
         <p style={{ textAlign: 'center', color: '#94A3B8', fontSize: '0.85rem', marginTop: '1.5rem' }}>
-          Don't have an account?{' '}
+          Already have an account?{' '}
           <span
-            onClick={onSwitchToSignup}
+            onClick={onSwitchToLogin}
             style={{ color: '#0E9AA7', cursor: 'pointer', fontWeight: 600 }}
           >
-            Sign Up
+            Sign In
           </span>
         </p>
       </div>
